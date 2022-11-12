@@ -41,7 +41,7 @@
     "webpack-dev-server": "3.1.14",
     "webpack-node-externals": "1.7.2",
     "truffle": "^5.4.33",
-    "@truffle/hdwallet-provider": "^1.0.17",
+    "truffle-hdwallet-provider": "^1.0.17",
     "dotenv": "^16.0.3"
   },
   "dependencies": {}
