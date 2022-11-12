@@ -1,5 +1,15 @@
 var HDWalletProvider = require("truffle-hdwallet-provider");
+const fs = require("fs");
 var mnemonic = "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
+
+try {
+  var envMnemonic = fs.readFileSync(".secret").toString().trim();
+  if (envMnemonic.length > 0) {
+    mnemonic = envMnemonic;
+  }
+} catch(e) {
+  console.log('no .secret file found, using default mnemonic');
+}
 
 module.exports = {
   networks: {
@@ -13,7 +23,7 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: "^0.4.24"
+      version: "^0.4.25"
     }
   }
 };
