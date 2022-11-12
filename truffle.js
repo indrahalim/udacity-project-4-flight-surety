@@ -13,6 +13,13 @@ try {
 
 module.exports = {
   networks: {
+    develop: {
+      provider: function() {
+        return new HDWalletProvider(mnemonic, "http://127.0.0.1:9545/", 0, 50);
+      },
+      network_id: '*',
+      gas: 9999999
+    },
     development: {
       provider: function() {
         return new HDWalletProvider(mnemonic, "http://127.0.0.1:8545/", 0, 50);
@@ -23,7 +30,7 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: "^0.4.25"
+      version: "^0.6.0"
     }
   }
 };
