@@ -77,15 +77,22 @@ contract('Flight Surety Tests', async (accounts) => {
     
     // ARRANGE
     let newAirline = accounts[2];
+    let result = false;
 
     // ACT
     try {
-        await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
+        await config.flightSuretyApp.registerAirline.call(newAirline, {from: config.firstAirline});
     }
     catch(e) {
-
+        console.log("error flightSuretyApp.registerAirline: " + e);
     }
-    let result = await config.flightSuretyData.isAirline.call(newAirline); 
+
+    try {
+        result = await config.flightSuretyData.isAirline.call(newAirline); 
+    } catch (e) {
+        console.log("error flightSuretyData.isAirline: " + e);
+    }
+
 
     // ASSERT
     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");

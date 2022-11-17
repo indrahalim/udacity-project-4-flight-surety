@@ -68,6 +68,11 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         return operational;
     }
 
+    function isAirline() external view override requireIsOperational returns (bool) {
+        return true; // TODO change this implementation
+    }
+
+
     /**
      * @dev Sets contract operations on/off
      *

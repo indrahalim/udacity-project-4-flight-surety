@@ -96,7 +96,7 @@ contract FlightSuretyApp {
      * @dev Add an airline to the registration queue
      *
      */
-    function registerAirline()
+    function registerAirline(address airline)
         external
         pure
         returns (bool success, uint256 votes)
@@ -309,6 +309,7 @@ contract FlightSuretyApp {
 
 interface FlightSuretyDataAbstract {
     function isOperational() external view returns(bool);
+    function isAirline() external view returns(bool);
     function setOperatingStatus(bool mode) external;
     function authorizeCaller(address airline) external;
     function revokeAuthorizeCaller(address airline) external;
