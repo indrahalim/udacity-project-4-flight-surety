@@ -26,7 +26,8 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
-    address private contractOwner; // Account used to deploy contract
+    // Account used to deploy contract
+    address private contractOwner;
 
     uint8 private constant MIN_AIRLINE_FOR_CONSENSUS = 5;
 
@@ -37,6 +38,8 @@ contract FlightSuretyApp {
         address airline;
     }
     mapping(bytes32 => Flight) private flights;
+
+    FlightSuretyDataAbstract flightSuretyData;
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -72,8 +75,9 @@ contract FlightSuretyApp {
      * @dev Contract constructor
      *
      */
-    constructor() public {
+    constructor(address payable fsDataAddress) public {
         contractOwner = msg.sender;
+        flightSuretyData = FlightSuretyDataAbstract(fsDataAddress);
     }
 
     /********************************************************************************************/
@@ -301,4 +305,15 @@ contract FlightSuretyApp {
     }
 
     // endregion
+}
+
+interface FlightSuretyDataAbstract {
+    function isOperational() external view returns(bool);
+    function setOperatingStatus(bool mode) external;
+    function authorizeCaller(address airline) external;
+    function revokeAuthorizeCaller(address airline) external;
+    function registerAirline(address airline) external view;
+    function buy() external payable;
+    function creditInsurees() external pure;
+    function pay() external pure;
 }

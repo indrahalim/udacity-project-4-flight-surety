@@ -3,8 +3,9 @@ pragma solidity ^0.6.0;
 
 // import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../contracts/FlightSuretyApp.sol";
 
-contract FlightSuretyData {
+contract FlightSuretyData is FlightSuretyDataAbstract {
     using SafeMath for uint256;
 
     /********************************************************************************************/
@@ -26,7 +27,7 @@ contract FlightSuretyData {
      */
     constructor() public {
         contractOwner = msg.sender;
-         authorizedCaller[contractOwner] = true;
+        authorizedCaller[contractOwner] = true;
     }
 
     /********************************************************************************************/
@@ -63,7 +64,7 @@ contract FlightSuretyData {
      *
      * @return A bool that is the current operating status
      */
-    function isOperational() public view returns (bool) {
+    function isOperational() external view override returns (bool) {
         return operational;
     }
 
@@ -72,20 +73,26 @@ contract FlightSuretyData {
      *
      * When operational mode is disabled, all write transactions except for this one will fail
      */
-    function setOperatingStatus(bool mode) external requireContractOwner {
+    function setOperatingStatus(bool mode)
+        external
+        override
+        requireContractOwner
+    {
         operational = mode;
     }
 
     function authorizeCaller(address _address)
         external
+        override
         requireIsOperational
         requireContractOwner
     {
         authorizedCaller[_address] = true;
     }
 
-    function revokeAuthorizedCaller(address _address)
+    function revokeAuthorizeCaller(address _address)
         external
+        override
         requireIsOperational
         requireContractOwner
     {
@@ -101,24 +108,29 @@ contract FlightSuretyData {
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline() external pure {}
+    function registerAirline(address airlineAddress)
+        external
+        view
+        override
+        requireIsOperational
+    {}
 
     /**
      * @dev Buy insurance for a flight
      *
      */
-    function buy() external payable {}
+    function buy() external payable override {}
 
     /**
      *  @dev Credits payouts to insurees
      */
-    function creditInsurees() external pure {}
+    function creditInsurees() external pure override {}
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay() external pure {}
+    function pay() external pure override {}
 
     /**
      * @dev Initial funding for the insurance. Unless there are too many delayed flights
@@ -141,5 +153,9 @@ contract FlightSuretyData {
      */
     fallback() external payable {
         fund();
+    }
+
+    receive() external payable {
+        // custom function code
     }
 }
