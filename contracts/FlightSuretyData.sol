@@ -17,6 +17,19 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
 
     mapping(address => bool) private authorizedCaller;
 
+
+    /********************************************************************************************/
+    /*                                      APPLICATION VARIABLES                                     */
+    /********************************************************************************************/
+    enum AirlineStatus { Unregistered, Funded, Pending, Registered }
+    struct Airline {
+        AirlineStatus status;
+        uint256 voteNeeded;
+        uint256 totalVote;
+    }
+    mapping(address => Airline) private airlines;
+    uint256 private totalAirlines = 0;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -83,6 +96,7 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         override
         requireContractOwner
     {
+        require(mode != operational, "Operational mode is already applied");
         operational = mode;
     }
 

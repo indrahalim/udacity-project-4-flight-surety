@@ -54,9 +54,28 @@ contract('Flight Surety Tests', async (accounts) => {
       
   });
 
+  it(`(multiparty) can prevent unecessary operating status change`, async function () {
+
+      let currentStatus = await config.flightSuretyData.isOperational();
+
+      let errorThrown = false;
+      try 
+      {
+          errorThrown = await config.flightSuretyData.setOperatingStatus(currentStatus, {from: config.testAddresses[0]});
+      }
+      catch(e) {
+          errorThrown = true;
+      }
+      assert.equal(errorThrown, true, "Should throw error if operational status == mode");
+
+  });
+
   it(`(multiparty) can block access to functions using requireIsOperational when operating status is false`, async function () {
 
-      await config.flightSuretyData.setOperatingStatus(false);
+      let currentStatus = await config.flightSuretyData.isOperational();
+      if (currentStatus) {
+        await config.flightSuretyData.setOperatingStatus(false);
+      }
 
       let reverted = false;
       try 
