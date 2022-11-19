@@ -17,19 +17,6 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
 
     mapping(address => bool) private authorizedCaller;
 
-
-    /********************************************************************************************/
-    /*                                      APPLICATION VARIABLES                                     */
-    /********************************************************************************************/
-    enum AirlineStatus { Unregistered, Funded, Pending, Registered }
-    struct Airline {
-        AirlineStatus status;
-        uint256 voteNeeded;
-        uint256 totalVote;
-    }
-    mapping(address => Airline) private airlines;
-    uint256 private totalAirlines = 0;
-
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -68,6 +55,14 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         _;
     }
 
+    modifier requireAuthorizedCaller() {
+        require(
+            authorizedCaller[msg.sender] == true,
+            "Caller is not authorized"
+        );
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
@@ -81,10 +76,15 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         return operational;
     }
 
-    function isAirline() external view override requireIsOperational returns (bool) {
+    function isAirline()
+        external
+        view
+        override
+        requireIsOperational
+        returns (bool)
+    {
         return true; // TODO change this implementation
     }
-
 
     /**
      * @dev Sets contract operations on/off
@@ -119,20 +119,97 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
     }
 
     /********************************************************************************************/
+    /*                                      SMART CONTRACT VARIABLES                            */
+    /********************************************************************************************/
+    enum AirlineStatus { Unregistered, Nominated, Registered, Funded }
+    struct Airline {
+        AirlineStatus status;
+        uint256 voteNeeded;
+        uint256 totalVote;
+    }
+    mapping(address => Airline) private airlines;
+    mapping(address => Airline) private nominatedAirlines;
+    uint256 private totalRegisteredAirlines = 0;
+    uint256 private totalNominatedAirlines = 0;
+
+    /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
-
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline(address airlineAddress)
+    function registerAirline(address airline)
         external
-        view
         override
         requireIsOperational
-    {}
+        requireAuthorizedCaller
+        returns (bool)
+    {
+        if (airlines[airline].status == AirlineStatus.Registered) {
+            return false;
+        }
+
+        airlines[airline] = Airline({
+            status: AirlineStatus.Registered,
+            voteNeeded: 0,
+            totalVote: 0
+        });
+        totalRegisteredAirlines += 1;
+        return true;
+    }
+
+    function getTotalRegisteredAirline() external override returns (uint256) {
+        return totalRegisteredAirlines;
+    }
+
+    function nominateAirline(address airline, uint256 voteNeeded)
+        external
+        override
+        requireIsOperational
+        requireAuthorizedCaller
+        returns (bool)
+    {
+        if (
+            nominatedAirlines[airline].status == AirlineStatus.Nominated
+        ) {
+            return false;
+        }
+
+        nominatedAirlines[airline] = Airline({
+            status: AirlineStatus.Nominated,
+            voteNeeded: voteNeeded,
+            totalVote: 0
+        });
+        totalNominatedAirlines += 1;
+
+        return true;
+    }
+
+    function voteAirline(address airline) external override returns (bool) {
+        if (
+            nominatedAirlines[airline].status == AirlineStatus.Nominated
+        ) {
+            return false;
+        }
+
+        nominatedAirlines[airline].totalVote += 1;
+        if (nominatedAirlines[airline].totalVote >= nominatedAirlines[airline].voteNeeded) {
+            // TODO create and emit AirlineRegistered
+
+            airlines[airline] = nominatedAirlines[airline];
+            airlines[airline].status = AirlineStatus.Registered;
+
+            delete(nominatedAirlines[airline]);
+        }
+        
+        return true;
+    }
+
+    function fundAirline(address airline) external override returns (bool success, uint256 votes) {
+        return (false, 0);
+    }
 
     /**
      * @dev Buy insurance for a flight

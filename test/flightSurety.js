@@ -92,6 +92,12 @@ contract('Flight Surety Tests', async (accounts) => {
 
   });
 
+  it('(airline) first airline is registered when contract is deployed', async () => {
+    let result = await config.flightSuretyApp.isRegisteredAirline.call(config.owner);
+
+    assert.equal(result, true, "contract owner should be registered as first airline");
+  });
+
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
     
     // ARRANGE

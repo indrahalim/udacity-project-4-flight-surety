@@ -30,6 +30,7 @@ contract FlightSuretyApp {
     address private contractOwner;
 
     uint8 private constant MIN_AIRLINE_FOR_CONSENSUS = 5;
+    uint8 private constant REGISTRATION_CONSENSUS_THRESHOLD = 50;
 
     struct Flight {
         bool isRegistered;
@@ -40,32 +41,7 @@ contract FlightSuretyApp {
     mapping(bytes32 => Flight) private flights;
 
     FlightSuretyDataAbstract flightSuretyData;
-
-    /********************************************************************************************/
-    /*                                       FUNCTION MODIFIERS                                 */
-    /********************************************************************************************/
-
-    // Modifiers help avoid duplication of code. They are typically used to validate something
-    // before a function is allowed to be executed.
-
-    /**
-     * @dev Modifier that requires the "operational" boolean variable to be "true"
-     *      This is used on all state changing functions to pause the contract in
-     *      the event there is an issue that needs to be fixed
-     */
-    modifier requireIsOperational() {
-        // Modify to call data contract's status
-        require(true, "Contract is currently not operational");
-        _; // All modifiers require an "_" which indicates where the function body will be added
-    }
-
-    /**
-     * @dev Modifier that requires the "ContractOwner" account to be the function caller
-     */
-    modifier requireContractOwner() {
-        require(msg.sender == contractOwner, "Caller is not contract owner");
-        _;
-    }
+    uint256 public constant MINIMUM_AIRLINE_FUND_NEEDED = 10 ether;
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -81,11 +57,50 @@ contract FlightSuretyApp {
     }
 
     /********************************************************************************************/
+    /*                                       FUNCTION MODIFIERS                                 */
+    /********************************************************************************************/
+
+    // Modifiers help avoid duplication of code. They are typically used to validate something
+    // before a function is allowed to be executed.
+
+    /**
+     * @dev Modifier that requires the "operational" boolean variable to be "true"
+     *      This is used on all state changing functions to pause the contract in
+     *      the event there is an issue that needs to be fixed
+     */
+    modifier requireIsOperational() {
+        // Modify to call data contract's status
+        require(
+            flightSuretyData.isOperational(),
+            "Contract is currently not operational"
+        );
+        _; // All modifiers require an "_" which indicates where the function body will be added
+    }
+
+    /**
+     * @dev Modifier that requires the "ContractOwner" account to be the function caller
+     */
+    modifier requireContractOwner() {
+        require(msg.sender == contractOwner, "Caller is not contract owner");
+        _;
+    }
+
+    /********************************************************************************************/
+    /*                                          EVENTS                                          */
+    /********************************************************************************************/
+    event AirlineNominated(address indexed airlineAddress);
+    event AirlineRegistered(address indexed airlineAddress);
+
+    /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() public pure returns (bool) {
-        return true; // Modify to call data contract's status
+    function isOperational() public view returns (bool) {
+        return flightSuretyData.isOperational(); // Modify to call data contract's status
+    }
+
+    function setOperatingStatus(bool mode) public requireContractOwner {
+        flightSuretyData.setOperatingStatus(mode);
     }
 
     /********************************************************************************************/
@@ -98,17 +113,37 @@ contract FlightSuretyApp {
      */
     function registerAirline(address airline)
         external
-        pure
         returns (bool success, uint256 votes)
     {
-        return (success, 0);
+        // Get number of registered airline
+        // If total registered airline > threshold, do consensus
+        uint256 totalRegisteredAirlines = flightSuretyData.getTotalRegisteredAirline();
+        if (totalRegisteredAirlines >= MIN_AIRLINE_FOR_CONSENSUS) {
+           uint256 voteNeeded = totalRegisteredAirlines.div(REGISTRATION_CONSENSUS_THRESHOLD);
+           flightSuretyData.nominateAirline(airline, voteNeeded);
+           flightSuretyData.voteAirline(airline);
+           return (true, 0); 
+        }
+        
+        bool registerSuccess = flightSuretyData.registerAirline(airline);
+        return (registerSuccess, 0);
+    }
+
+    function isRegisteredAirline(address airline) public requireIsOperational returns(bool) {
+        return true; // TODO replace this
+    }
+
+    function fundAirline(address airline) external returns (bool success, uint256 votes){
+        return (true, 0);
     }
 
     /**
      * @dev Register a future flight for insuring.
      *
      */
-    function registerFlight() external pure {}
+    function registerFlight() external pure {
+
+    }
 
     /**
      * @dev Called after oracle has updated flight status
@@ -267,7 +302,10 @@ contract FlightSuretyApp {
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function generateIndexes(address account) internal returns (uint8[3] memory) {
+    function generateIndexes(address account)
+        internal
+        returns (uint8[3] memory)
+    {
         uint8[3] memory indexes;
         indexes[0] = getRandomIndex(account);
 
@@ -308,13 +346,31 @@ contract FlightSuretyApp {
 }
 
 interface FlightSuretyDataAbstract {
-    function isOperational() external view returns(bool);
-    function isAirline() external view returns(bool);
+    function isOperational() external view returns (bool);
+
+    function isAirline() external view returns (bool);
+
     function setOperatingStatus(bool mode) external;
+
     function authorizeCaller(address airline) external;
+
     function revokeAuthorizeCaller(address airline) external;
-    function registerAirline(address airline) external view;
+
+
+    function registerAirline(address airline) external returns (bool);
+
+    function getTotalRegisteredAirline() external returns (uint256);
+
+    function nominateAirline(address airline, uint256 voteNeeded) external returns (bool);
+
+    function voteAirline(address airline) external returns (bool);
+
+    function fundAirline(address airline) external returns (bool success, uint256 votes);
+
+
     function buy() external payable;
+
     function creditInsurees() external pure;
+
     function pay() external pure;
 }
