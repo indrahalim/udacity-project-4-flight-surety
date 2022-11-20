@@ -54,6 +54,7 @@ contract FlightSuretyApp {
     constructor(address payable fsDataAddress) public {
         contractOwner = msg.sender;
         flightSuretyData = FlightSuretyDataAbstract(fsDataAddress);
+        // flightSuretyData.registerAirline(contractOwner);
     }
 
     /********************************************************************************************/
@@ -85,6 +86,11 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireIsAuthorized() {
+        require(flightSuretyData.isAuthorizedCaller(msg.sender), "You're not authorized");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                          EVENTS                                          */
     /********************************************************************************************/
@@ -112,7 +118,8 @@ contract FlightSuretyApp {
      *
      */
     function registerAirline(address airline)
-        external
+        public
+        requireIsAuthorized
         returns (bool success, uint256 votes)
     {
         // Get number of registered airline
@@ -130,11 +137,15 @@ contract FlightSuretyApp {
     }
 
     function isRegisteredAirline(address airline) public requireIsOperational returns(bool) {
-        return true; // TODO replace this
+        return flightSuretyData.isRegisteredAirline(airline);
     }
 
-    function fundAirline(address airline) external returns (bool success, uint256 votes){
-        return (true, 0);
+    function fundAirline(address airline) external returns (bool success, uint256 votes) {
+        return flightSuretyData.fundAirline(airline);
+    }
+
+    function isFundedAirline(address airline) public requireIsOperational returns(bool) {
+        return flightSuretyData.isFundedAirline(airline);
     }
 
     /**
@@ -356,6 +367,11 @@ interface FlightSuretyDataAbstract {
 
     function revokeAuthorizeCaller(address airline) external;
 
+    function isAuthorizedCaller(address _address) external view returns (bool);
+
+    function isRegisteredAirline(address airline) external returns (bool);
+
+    function isFundedAirline(address airline) external returns (bool);
 
     function registerAirline(address airline) external returns (bool);
 

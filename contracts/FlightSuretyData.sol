@@ -118,6 +118,10 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         delete authorizedCaller[_address];
     }
 
+    function isAuthorizedCaller(address _address) external override view requireIsOperational returns (bool){
+        return authorizedCaller[_address];
+    }
+
     /********************************************************************************************/
     /*                                      SMART CONTRACT VARIABLES                            */
     /********************************************************************************************/
@@ -135,6 +139,15 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
+
+    function isRegisteredAirline(address airline) external override requireIsOperational returns (bool) {
+        return airlines[airline].status == AirlineStatus.Registered;
+    }
+
+    function isFundedAirline(address airline) external override requireIsOperational returns (bool) {
+        return airlines[airline].status == AirlineStatus.Funded;
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
