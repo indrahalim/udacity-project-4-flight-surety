@@ -128,6 +128,7 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
     enum AirlineStatus { Unregistered, Nominated, Registered, Funded }
     struct Airline {
         AirlineStatus status;
+        uint256 funds;
         uint256 voteNeeded;
         uint256 totalVote;
     }
@@ -135,6 +136,7 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
     mapping(address => Airline) private nominatedAirlines;
     uint256 private totalRegisteredAirlines = 0;
     uint256 private totalNominatedAirlines = 0;
+    uint256 private totalFundedAirlines = 0;
 
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
@@ -158,19 +160,21 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         override
         requireIsOperational
         requireAuthorizedCaller
-        returns (bool)
+        returns (bool success, uint256 votes)
     {
         if (airlines[airline].status == AirlineStatus.Registered) {
-            return false;
+            return (false, 0);
         }
 
+        uint256 totalVote = 1;
         airlines[airline] = Airline({
             status: AirlineStatus.Registered,
+            funds: 0,
             voteNeeded: 0,
-            totalVote: 0
+            totalVote: totalVote
         });
         totalRegisteredAirlines += 1;
-        return true;
+        return (true, totalVote);
     }
 
     function getTotalRegisteredAirline() external override returns (uint256) {
@@ -192,6 +196,7 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
 
         nominatedAirlines[airline] = Airline({
             status: AirlineStatus.Nominated,
+            funds: 0,
             voteNeeded: voteNeeded,
             totalVote: 0
         });
@@ -200,14 +205,15 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         return true;
     }
 
-    function voteAirline(address airline) external override returns (bool) {
+    function voteAirline(address airline) external override returns (bool success, uint256 votes) {
         if (
             nominatedAirlines[airline].status == AirlineStatus.Nominated
         ) {
-            return false;
+            return (false, nominatedAirlines[airline].totalVote);
         }
 
         nominatedAirlines[airline].totalVote += 1;
+
         if (nominatedAirlines[airline].totalVote >= nominatedAirlines[airline].voteNeeded) {
             // TODO create and emit AirlineRegistered
 
@@ -217,11 +223,15 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
             delete(nominatedAirlines[airline]);
         }
         
-        return true;
+        return (true, nominatedAirlines[airline].totalVote);
     }
 
-    function fundAirline(address airline) external override returns (bool success, uint256 votes) {
-        return (false, 0);
+    function fundAirline(address airline, uint256 amount) external override returns (bool, uint256) {
+        airlines[airline].funds = airlines[airline].funds.add(amount);
+        airlines[airline].status = AirlineStatus.Funded;
+        totalFundedAirlines++;
+
+        return (true, airlines[airline].funds);
     }
 
     /**

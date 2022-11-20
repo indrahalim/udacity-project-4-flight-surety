@@ -40,6 +40,7 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
 
+    address payable fsDataAddress;
     FlightSuretyDataAbstract flightSuretyData;
     uint256 public constant MINIMUM_AIRLINE_FUND_NEEDED = 10 ether;
 
@@ -51,10 +52,10 @@ contract FlightSuretyApp {
      * @dev Contract constructor
      *
      */
-    constructor(address payable fsDataAddress) public {
+    constructor(address payable dataAddress) public {
         contractOwner = msg.sender;
-        flightSuretyData = FlightSuretyDataAbstract(fsDataAddress);
-        // flightSuretyData.registerAirline(contractOwner);
+        flightSuretyData = FlightSuretyDataAbstract(dataAddress);
+        fsDataAddress= dataAddress;
     }
 
     /********************************************************************************************/
@@ -87,7 +88,24 @@ contract FlightSuretyApp {
     }
 
     modifier requireIsAuthorized() {
-        require(flightSuretyData.isAuthorizedCaller(msg.sender), "You're not authorized");
+        require(
+            flightSuretyData.isAuthorizedCaller(msg.sender),
+            "You're not authorized"
+        );
+        _;
+    }
+
+    modifier requireRegisteredAirline() {
+        require(flightSuretyData.isRegisteredAirline(msg.sender), "Only airline that has been registered is allowed");
+        _;
+    }
+
+    modifier requireFundedAirline() {
+        if (flightSuretyData.getTotalRegisteredAirline() > 0) {
+            require(flightSuretyData.isFundedAirline(msg.sender), "Only airline that has provided funding is allowed");
+        } else {
+            require(flightSuretyData.isAuthorizedCaller(msg.sender), "You're not an authorized caller");
+        }
         _;
     }
 
@@ -95,6 +113,7 @@ contract FlightSuretyApp {
     /*                                          EVENTS                                          */
     /********************************************************************************************/
     event AirlineNominated(address indexed airlineAddress);
+    event AirlineFunded(address indexed airlineAddress, uint256 funds);
     event AirlineRegistered(address indexed airlineAddress);
 
     /********************************************************************************************/
@@ -119,32 +138,55 @@ contract FlightSuretyApp {
      */
     function registerAirline(address airline)
         public
-        requireIsAuthorized
+        requireFundedAirline
         returns (bool success, uint256 votes)
     {
         // Get number of registered airline
         // If total registered airline > threshold, do consensus
-        uint256 totalRegisteredAirlines = flightSuretyData.getTotalRegisteredAirline();
+        uint256 totalRegisteredAirlines = flightSuretyData .getTotalRegisteredAirline();
+
         if (totalRegisteredAirlines >= MIN_AIRLINE_FOR_CONSENSUS) {
-           uint256 voteNeeded = totalRegisteredAirlines.div(REGISTRATION_CONSENSUS_THRESHOLD);
-           flightSuretyData.nominateAirline(airline, voteNeeded);
-           flightSuretyData.voteAirline(airline);
-           return (true, 0); 
+            uint256 voteNeeded = totalRegisteredAirlines.div(
+                REGISTRATION_CONSENSUS_THRESHOLD
+            );
+            if (flightSuretyData.nominateAirline(airline, voteNeeded)) {
+                return flightSuretyData.voteAirline(airline);
+            }
+            return (false, 0);
         }
-        
-        bool registerSuccess = flightSuretyData.registerAirline(airline);
-        return (registerSuccess, 0);
+
+        return flightSuretyData.registerAirline(airline);
     }
 
-    function isRegisteredAirline(address airline) public requireIsOperational returns(bool) {
+    function isRegisteredAirline(address airline)
+        public
+        requireIsOperational
+        returns (bool)
+    {
         return flightSuretyData.isRegisteredAirline(airline);
     }
 
-    function fundAirline(address airline) external returns (bool success, uint256 votes) {
-        return flightSuretyData.fundAirline(airline);
+    function fundAirline()
+        external
+        payable
+        requireIsOperational
+        requireRegisteredAirline
+        returns (bool, uint256)
+    {
+        require( msg.value >= MINIMUM_AIRLINE_FUND_NEEDED, "funding requires 10 Ether");
+
+        fsDataAddress.transfer(msg.value);
+        (bool result, uint256 funds) = flightSuretyData.fundAirline(msg.sender, msg.value);
+        emit AirlineFunded(msg.sender, msg.value);
+
+        return (result, funds);
     }
 
-    function isFundedAirline(address airline) public requireIsOperational returns(bool) {
+    function isFundedAirline(address airline)
+        public
+        requireIsOperational
+        returns (bool)
+    {
         return flightSuretyData.isFundedAirline(airline);
     }
 
@@ -152,9 +194,7 @@ contract FlightSuretyApp {
      * @dev Register a future flight for insuring.
      *
      */
-    function registerFlight() external pure {
-
-    }
+    function registerFlight() external pure {}
 
     /**
      * @dev Called after oracle has updated flight status
@@ -373,16 +413,17 @@ interface FlightSuretyDataAbstract {
 
     function isFundedAirline(address airline) external returns (bool);
 
-    function registerAirline(address airline) external returns (bool);
+    function registerAirline(address airline) external returns (bool success, uint256 votes);
 
     function getTotalRegisteredAirline() external returns (uint256);
 
-    function nominateAirline(address airline, uint256 voteNeeded) external returns (bool);
+    function nominateAirline(address airline, uint256 voteNeeded)
+        external
+        returns (bool);
 
-    function voteAirline(address airline) external returns (bool);
+    function voteAirline(address airline) external returns (bool success, uint256 votes);
 
-    function fundAirline(address airline) external returns (bool success, uint256 votes);
-
+    function fundAirline(address airline, uint256 amount) external returns (bool success, uint256 funds);
 
     function buy() external payable;
 
