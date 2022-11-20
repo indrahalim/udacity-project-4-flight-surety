@@ -26,6 +26,7 @@ var Config = async function(accounts) {
     let thirdAirline = accounts[3];
     let fourthAirline = accounts[4];
     let fifthAirline = accounts[5];
+    let sixthAirline = accounts[6];
 
     let flightSuretyData = await FlightSuretyData.new();
     let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
@@ -37,6 +38,7 @@ var Config = async function(accounts) {
         thirdAirline: thirdAirline,
         fourthAirline: fourthAirline,
         fifthAirline: fifthAirline,
+        sixthAirline: sixthAirline,
         weiMultiple: (new BigNumber(10)).pow(18),
         testAddresses: testAddresses,
         flightSuretyData: flightSuretyData,

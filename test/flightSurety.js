@@ -166,7 +166,15 @@ contract("Flight Surety Tests", async (accounts) => {
     assert.equal(result, false, "Fifth airline should now be registered");
   });
 
-  //   it('(airline) Airline can be registered, but does not participate in contract until it submits funding of 10 ether (make sure it is not 10 wei)', async() => {
+  it('(airline) Airline can be registered, but does not participate in contract until it submits funding of 10 ether (make sure it is not 10 wei)', async() => {
+    let result = true;
+    try {
+      await config.flightSuretyApp.registerAirline(config.sixthAirline, {from: config.fifthAirline});
+    } catch (e) {
+      result = false; 
+    }
 
-  //   });
+    assert.equal(result, false, "Fifth airline cannot register other airline yet");
+  });
+
 });
