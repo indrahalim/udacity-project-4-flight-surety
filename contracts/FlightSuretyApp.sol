@@ -7,6 +7,7 @@ pragma solidity ^0.6.0;
 
 // import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.4.2/contracts/math/SafeMath.sol";
 
 /************************************************** */
 /* FlightSurety Smart Contract                      */
@@ -27,9 +28,9 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     // Account used to deploy contract
-    address private contractOwner;
+    address public contractOwner;
 
-    uint8 private constant MIN_AIRLINE_FOR_CONSENSUS = 5;
+    uint8 private constant MIN_AIRLINE_FOR_CONSENSUS = 4;
     uint8 private constant REGISTRATION_CONSENSUS_THRESHOLD = 50;
 
     struct Flight {
@@ -87,14 +88,6 @@ contract FlightSuretyApp {
         _;
     }
 
-    modifier requireIsAuthorized() {
-        require(
-            flightSuretyData.isAuthorizedCaller(msg.sender),
-            "You're not authorized"
-        );
-        _;
-    }
-
     modifier requireRegisteredAirline() {
         require(flightSuretyData.isRegisteredAirline(msg.sender), "Only airline that has been registered is allowed");
         _;
@@ -104,7 +97,7 @@ contract FlightSuretyApp {
         if (flightSuretyData.getTotalRegisteredAirline() > 0) {
             require(flightSuretyData.isFundedAirline(msg.sender), "Only airline that has provided funding is allowed");
         } else {
-            require(flightSuretyData.isAuthorizedCaller(msg.sender), "You're not an authorized caller");
+            require(contractOwner == msg.sender, "You're not an contract owner");
         }
         _;
     }
@@ -160,6 +153,7 @@ contract FlightSuretyApp {
 
     function isRegisteredAirline(address airline)
         public
+        view
         requireIsOperational
         returns (bool)
     {
@@ -167,13 +161,13 @@ contract FlightSuretyApp {
     }
 
     function fundAirline()
-        external
+        public
         payable
         requireIsOperational
         requireRegisteredAirline
         returns (bool, uint256)
     {
-        require( msg.value >= MINIMUM_AIRLINE_FUND_NEEDED, "funding requires 10 Ether");
+        require(msg.value >= MINIMUM_AIRLINE_FUND_NEEDED, "funding requires 10 Ether");
 
         fsDataAddress.transfer(msg.value);
         (bool result, uint256 funds) = flightSuretyData.fundAirline(msg.sender, msg.value);
@@ -184,6 +178,7 @@ contract FlightSuretyApp {
 
     function isFundedAirline(address airline)
         public
+        view
         requireIsOperational
         returns (bool)
     {
@@ -202,7 +197,7 @@ contract FlightSuretyApp {
      */
     function processFlightStatus(
         address airline,
-        string calldata flight,
+        string memory flight,
         uint256 timestamp,
         uint8 statusCode
     ) internal pure {}
@@ -346,7 +341,7 @@ contract FlightSuretyApp {
 
     function getFlightKey(
         address airline,
-        string calldata flight,
+        string memory flight,
         uint256 timestamp
     ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
@@ -407,11 +402,9 @@ interface FlightSuretyDataAbstract {
 
     function revokeAuthorizeCaller(address airline) external;
 
-    function isAuthorizedCaller(address _address) external view returns (bool);
+    function isRegisteredAirline(address airline) external view returns (bool);
 
-    function isRegisteredAirline(address airline) external returns (bool);
-
-    function isFundedAirline(address airline) external returns (bool);
+    function isFundedAirline(address airline) external view returns (bool);
 
     function registerAirline(address airline) external returns (bool success, uint256 votes);
 

@@ -3,6 +3,7 @@ pragma solidity ^0.6.0;
 
 // import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.4.2/contracts/math/SafeMath.sol";
 import "../contracts/FlightSuretyApp.sol";
 
 contract FlightSuretyData is FlightSuretyDataAbstract {
@@ -51,7 +52,7 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
      * @dev Modifier that requires the "ContractOwner" account to be the function caller
      */
     modifier requireContractOwner() {
-        require(msg.sender == contractOwner, "Caller is not contract owner");
+        require(msg.sender == contractOwner, "Caller is not data contract owner");
         _;
     }
 
@@ -94,7 +95,7 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
     function setOperatingStatus(bool mode)
         external
         override
-        requireContractOwner
+        requireAuthorizedCaller
     {
         require(mode != operational, "Operational mode is already applied");
         operational = mode;
@@ -118,10 +119,6 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         delete authorizedCaller[_address];
     }
 
-    function isAuthorizedCaller(address _address) external override view requireIsOperational returns (bool){
-        return authorizedCaller[_address];
-    }
-
     /********************************************************************************************/
     /*                                      SMART CONTRACT VARIABLES                            */
     /********************************************************************************************/
@@ -132,21 +129,21 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         uint256 voteNeeded;
         uint256 totalVote;
     }
-    mapping(address => Airline) private airlines;
-    mapping(address => Airline) private nominatedAirlines;
-    uint256 private totalRegisteredAirlines = 0;
-    uint256 private totalNominatedAirlines = 0;
-    uint256 private totalFundedAirlines = 0;
+    mapping(address => Airline) public airlines;
+    mapping(address => Airline) public nominatedAirlines;
+    uint256 public totalRegisteredAirlines = 0;
+    uint256 public totalNominatedAirlines = 0;
+    uint256 public totalFundedAirlines = 0;
 
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-    function isRegisteredAirline(address airline) external override requireIsOperational returns (bool) {
+    function isRegisteredAirline(address airline) external view override requireIsOperational returns (bool) {
         return airlines[airline].status == AirlineStatus.Registered;
     }
 
-    function isFundedAirline(address airline) external override requireIsOperational returns (bool) {
+    function isFundedAirline(address airline) external view override requireIsOperational returns (bool) {
         return airlines[airline].status == AirlineStatus.Funded;
     }
 
@@ -229,9 +226,9 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
     function fundAirline(address airline, uint256 amount) external override returns (bool, uint256) {
         airlines[airline].funds = airlines[airline].funds.add(amount);
         airlines[airline].status = AirlineStatus.Funded;
-        totalFundedAirlines++;
+        totalFundedAirlines += 1;
 
-        return (true, airlines[airline].funds);
+        return (airlines[airline].status == AirlineStatus.Funded, airlines[airline].funds);
     }
 
     /**
