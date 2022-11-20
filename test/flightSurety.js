@@ -18,7 +18,7 @@ contract("Flight Surety Tests", async (accounts) => {
 
   it(`(settings) has correct initial isOperational() value`, async function () {
     // Get operating status
-    let status = await config.flightSuretyApp.isOperational.call();
+    let status = await config.flightSuretyApp.isOperational();
     assert.equal(status, true, "Incorrect initial operating status value");
   });
 
@@ -82,19 +82,16 @@ contract("Flight Surety Tests", async (accounts) => {
   });
 
   it("(airline) first airline is registered when contract is deployed", async () => {
-    let result = await config.flightSuretyApp.isRegisteredAirline.call(
-      config.firstAirline
-    );
+    let result = await config.flightSuretyApp.isRegisteredAirline(config.firstAirline);
 
     assert.equal( result, true, "contract owner should be registered as first airline");
   });
 
   it("(airline) unregistered airline cannot register new airline", async () => {
     let result = false;
-    let votes;
 
     try {
-      result, votes = await config.flightSuretyApp.registerAirline.call( config.fourthAirline, { from: config.thirdAirline });
+      result = await config.flightSuretyApp.registerAirline(config.fourthAirline, { from: config.thirdAirline });
     } catch {
       result = false;
     }
@@ -105,12 +102,12 @@ contract("Flight Surety Tests", async (accounts) => {
   it("(airline) cannot register an Airline using registerAirline() if it is not funded", async () => {
     // ACT
     try {
-      await config.flightSuretyApp.registerAirline.call(config.secondAirline, { from: config.firstAirline});
+      await config.flightSuretyApp.registerAirline(config.secondAirline, { from: config.firstAirline});
     } catch (e) {
       console.log("error flightSuretyApp.registerAirline: " + e);
     }
 
-    let result = await config.flightSuretyApp.isRegisteredAirline.call(config.secondAirline);
+    let result = await config.flightSuretyApp.isRegisteredAirline(config.secondAirline);
 
     // ASSERT
     assert.equal( result, false, "Airline should not be able to register another airline if it hasn't provided funding");
@@ -118,43 +115,41 @@ contract("Flight Surety Tests", async (accounts) => {
 
   it("(airline) can only register an Airline using registerAirline() if it has provided funding", async () => {
     let amountInWei = new Web3.utils.BN(Web3.utils.toWei("10", "ether"));
-    await config.flightSuretyApp.fundAirline.call({ from: config.firstAirline, value: amountInWei});
-    let isFunded = await config.flightSuretyApp.isFundedAirline.call(config.firstAirline);
-    assert.equal(isFunded, true, "Funding not succeeded");
+    await config.flightSuretyApp.fundAirline({ from: config.firstAirline, value: amountInWei});
 
-    let result, votes;
     try {
-       result, votes = await config.flightSuretyApp.registerAirline.call(config.secondAirline, {from: config.firstAirline});
+       await config.flightSuretyApp.registerAirline(config.secondAirline, {from: config.firstAirline});
     } catch (e) {
        console.log("error flightSuretyApp.registerAirline: " + e);
     }
 
-    let isRegistered = await config.flightSuretyApp.isRegisteredAirline.call(config.secondAirline);
-    console.log(isRegistered);
+    let isRegistered = await config.flightSuretyApp.isRegisteredAirline(config.secondAirline);
 
     // ASSERT
     assert.equal(isRegistered, true, "Airline should be able to register another airline if it has provided funding");
   });
 
-  //   it('(airline) Only existing airline may register a new airline until there are at least four airlines registered', async () => {
-  //     // 2nd airline can register 3rd airline
-  //     let result = false;
-  //     try {
-  //         result = await config.flightSuretyApp.registerAirline.call(config.secondAirline, {from: config.fourthAirline});
-  //     } catch {
-  //         result = false;
-  //     }
-  //     assert.equal(result, true, "Second airline can register a new airline");
+  it('(airline) Only existing airline may register a new airline until there are at least four airlines registered', async () => {
+    // 2nd airline provides fund
+    let amountInWei = new Web3.utils.BN(Web3.utils.toWei("10", "ether"));
+    await config.flightSuretyApp.fundAirline({from: config.secondAirline, value: amountInWei});
 
-  //     // 2nd airline can register 4th airline
-  //     result = false;
-  //     try {
-  //         result = await config.flightSuretyApp.registerAirline.call(config.secondAirline, {from: config.fourthAirline});
-  //     } catch {
-  //         result = false;
-  //     }
-  //     assert.equal(result, true, "Third airline can register a new airline");
-  //   });
+    // 2nd airline can register 3rd airline
+    await config.flightSuretyApp.registerAirline(config.thirdAirline, {from: config.secondAirline});
+    let result = await config.flightSuretyApp.isRegisteredAirline(config.thirdAirline);
+    assert.equal(result, true, "Second airline can register a new airline");
+
+    // 3nd airline provides fund
+    await config.flightSuretyApp.fundAirline({from: config.thirdAirline, value: amountInWei});
+
+    // 3nd airline can register 4th airline
+    await config.flightSuretyApp.registerAirline(config.fourthAirline, {from: config.thirdAirline});
+    result = await config.flightSuretyApp.isRegisteredAirline(config.fourthAirline);
+    assert.equal(result, true, "Third airline can register a new airline");
+
+    // 4th airline provides fund
+    await config.flightSuretyApp.fundAirline({from: config.fourthAirline, value: amountInWei});
+  });
 
   //   it('(airline) Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines', async() => {
 

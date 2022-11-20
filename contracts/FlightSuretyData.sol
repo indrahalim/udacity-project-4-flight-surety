@@ -157,10 +157,10 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         override
         requireIsOperational
         requireAuthorizedCaller
-        returns (bool success, uint256 votes)
+        returns (bool)
     {
         if (airlines[airline].status == AirlineStatus.Registered) {
-            return (false, 0);
+            return false;
         }
 
         uint256 totalVote = 1;
@@ -171,7 +171,7 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
             totalVote: totalVote
         });
         totalRegisteredAirlines += 1;
-        return (true, totalVote);
+        return true;
     }
 
     function getTotalRegisteredAirline() external override returns (uint256) {
@@ -202,11 +202,11 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
         return true;
     }
 
-    function voteAirline(address airline) external override returns (bool success, uint256 votes) {
+    function voteAirline(address airline) external override returns (bool) {
         if (
             nominatedAirlines[airline].status == AirlineStatus.Nominated
         ) {
-            return (false, nominatedAirlines[airline].totalVote);
+            return false;
         }
 
         nominatedAirlines[airline].totalVote += 1;
@@ -220,7 +220,7 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
             delete(nominatedAirlines[airline]);
         }
         
-        return (true, nominatedAirlines[airline].totalVote);
+        return true;
     }
 
     function fundAirline(address airline, uint256 amount) external override returns (bool, uint256) {

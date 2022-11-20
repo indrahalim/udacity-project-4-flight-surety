@@ -132,7 +132,7 @@ contract FlightSuretyApp {
     function registerAirline(address airline)
         public
         requireFundedAirline
-        returns (bool success, uint256 votes)
+        returns (bool)
     {
         // Get number of registered airline
         // If total registered airline > threshold, do consensus
@@ -145,7 +145,7 @@ contract FlightSuretyApp {
             if (flightSuretyData.nominateAirline(airline, voteNeeded)) {
                 return flightSuretyData.voteAirline(airline);
             }
-            return (false, 0);
+            return false;
         }
 
         return flightSuretyData.registerAirline(airline);
@@ -406,7 +406,7 @@ interface FlightSuretyDataAbstract {
 
     function isFundedAirline(address airline) external view returns (bool);
 
-    function registerAirline(address airline) external returns (bool success, uint256 votes);
+    function registerAirline(address airline) external returns (bool success);
 
     function getTotalRegisteredAirline() external returns (uint256);
 
@@ -414,7 +414,7 @@ interface FlightSuretyDataAbstract {
         external
         returns (bool);
 
-    function voteAirline(address airline) external returns (bool success, uint256 votes);
+    function voteAirline(address airline) external returns (bool success);
 
     function fundAirline(address airline, uint256 amount) external returns (bool success, uint256 funds);
 
