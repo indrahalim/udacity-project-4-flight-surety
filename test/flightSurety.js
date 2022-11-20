@@ -147,13 +147,24 @@ contract("Flight Surety Tests", async (accounts) => {
     result = await config.flightSuretyApp.isRegisteredAirline(config.fourthAirline);
     assert.equal(result, true, "Third airline can register a new airline");
 
-    // 4th airline provides fund
-    await config.flightSuretyApp.fundAirline({from: config.fourthAirline, value: amountInWei});
   });
 
-  //   it('(airline) Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines', async() => {
+  it('(airline) Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines', async() => {
+    let amountInWei = new Web3.utils.BN(Web3.utils.toWei("10", "ether"));
 
-  //   });
+    // 4th airline provides fund
+    await config.flightSuretyApp.fundAirline({from: config.fourthAirline, value: amountInWei});
+
+    // 4th airline registers 5th airline, but status is still pending
+    await config.flightSuretyApp.registerAirline(config.fifthAirline, {from: config.fourthAirline});
+    let result = await config.flightSuretyApp.isRegisteredAirline(config.fifthAirline);
+    assert.equal(result, false, "Fifth Airline status is still pending");
+
+    // Need vote from other members
+    await config.flightSuretyApp.voteAirline(config.fifthAirline, {from: config.firstAirline});
+    result = await config.flightSuretyApp.isRegisteredAirline(config.fifthAirline);
+    assert.equal(result, false, "Fifth airline should now be registered");
+  });
 
   //   it('(airline) Airline can be registered, but does not participate in contract until it submits funding of 10 ether (make sure it is not 10 wei)', async() => {
 

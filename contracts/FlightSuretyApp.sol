@@ -185,6 +185,10 @@ contract FlightSuretyApp {
         return flightSuretyData.isFundedAirline(airline);
     }
 
+    function voteAirline(address airline) public requireIsOperational requireFundedAirline returns (bool) {
+        return flightSuretyData.voteAirline(airline);
+    }
+
     /**
      * @dev Register a future flight for insuring.
      *
