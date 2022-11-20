@@ -8,8 +8,6 @@ contract("Flight Surety Tests", async (accounts) => {
     config = await Test.Config(accounts);
     web3 = new Web3(new Web3.providers.HttpProvider(config.url));
     await config.flightSuretyData.authorizeCaller( config.flightSuretyApp.address, {from: config.owner });
-
-    await config.flightSuretyApp.registerAirline(config.firstAirline, {from: config.owner}); // TODO remove this hacky method
   });
 
   /****************************************************************************************/
@@ -84,7 +82,7 @@ contract("Flight Surety Tests", async (accounts) => {
   it("(airline) first airline is registered when contract is deployed", async () => {
     let result = await config.flightSuretyApp.isRegisteredAirline(config.firstAirline);
 
-    assert.equal( result, true, "contract owner should be registered as first airline");
+    assert.equal(result, true, "contract owner should be registered as first airline");
   });
 
   it("(airline) unregistered airline cannot register new airline", async () => {

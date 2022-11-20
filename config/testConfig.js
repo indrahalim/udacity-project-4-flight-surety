@@ -28,7 +28,7 @@ var Config = async function(accounts) {
     let fifthAirline = accounts[5];
     let sixthAirline = accounts[6];
 
-    let flightSuretyData = await FlightSuretyData.new();
+    let flightSuretyData = await FlightSuretyData.new(firstAirline);
     let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
     
     return {

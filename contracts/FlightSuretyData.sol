@@ -26,9 +26,18 @@ contract FlightSuretyData is FlightSuretyDataAbstract {
      * @dev Constructor
      *      The deploying account becomes contractOwner
      */
-    constructor() public {
+    constructor(address firstAirline) public {
         contractOwner = msg.sender;
         authorizedCaller[contractOwner] = true;
+        
+        // Register first airline
+        airlines[firstAirline] = Airline({
+            status: AirlineStatus.Registered,
+            funds: 0,
+            voteNeeded: 0,
+            totalVote: 0
+        });
+        totalRegisteredAirlines += 1;
     }
 
     /********************************************************************************************/

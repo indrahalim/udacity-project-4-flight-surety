@@ -55,8 +55,8 @@ contract FlightSuretyApp {
      */
     constructor(address payable dataAddress) public {
         contractOwner = msg.sender;
-        flightSuretyData = FlightSuretyDataAbstract(dataAddress);
         fsDataAddress= dataAddress;
+        flightSuretyData = FlightSuretyDataAbstract(dataAddress);
     }
 
     /********************************************************************************************/

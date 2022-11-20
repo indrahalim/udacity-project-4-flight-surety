@@ -4,10 +4,9 @@ const fs = require('fs');
 
 module.exports = async (deployer) => {
 
-    // let firstAirline = '0xf17f52151EbEF6C7334FAD080c5704D77216b732';
-    let firstAirline = "0xF014343BDFFbED8660A9d8721deC985126f189F3";
+    let firstAirline = '0xf17f52151EbEF6C7334FAD080c5704D77216b732';
 
-    await deployer.deploy(FlightSuretyData)
+    await deployer.deploy(FlightSuretyData, firstAirline)
     .then(() => {
         return deployer.deploy(FlightSuretyApp, FlightSuretyData.address)
                 .then(() => {
@@ -24,7 +23,4 @@ module.exports = async (deployer) => {
                 });
     });
 
-    // // Register first airline when contract is deployed
-    // let app = await FlightSuretyApp.deployed();
-    // await app.registerAirline(firstAirline);
 }
