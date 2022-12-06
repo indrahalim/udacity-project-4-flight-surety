@@ -27,17 +27,19 @@ To install, download or clone the repo, then:
 ## Develop Client
 
 To run truffle tests:
-
-`truffle test ./test/flightSurety.js`
-`truffle test ./test/oracles.js`
+```bash
+./scripts/1_start_ganacle-cli.sh
+truffle migrate --reset --network development
+npm run server
+truffle test ./test/flightSurety.js
+truffle test ./test/oracles.js
+```
 
 To use the dapp:
-
 `truffle migrate`
 `npm run dapp`
 
 To view dapp:
-
 `http://localhost:8000`
 
 ## Develop Server
